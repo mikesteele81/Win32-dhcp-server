@@ -1,9 +1,13 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module System.Win32.DHCP.SEARCH_INFO
   ( SEARCH_INFO_TYPE
   , SEARCH_INFO (..)
   , withSearchInfo
   ) where
 
+import Data.Monoid ((<>))
+import qualified Data.Text as T
 import Foreign
 import Foreign.C.Types
 
@@ -44,8 +48,8 @@ data SEARCH_INFO
   | ClientName            !String
 
 instance Show SEARCH_INFO where
-  show (ClientIpAddress ip) = "ClientIpAddress " ++ showIp ip
-  show (ClientHardwareAddress mac) = "ClientHardwareAddress " ++ showMac ":" mac
+  show (ClientIpAddress ip) = T.unpack $ "ClientIpAddress " <> showIp ip
+  show (ClientHardwareAddress mac) = T.unpack $ "ClientHardwareAddress " <> showMac ":" mac
   show (ClientName name) = "ClientName " ++ name
 
 siTypeOf :: SEARCH_INFO -> SEARCH_INFO_TYPE

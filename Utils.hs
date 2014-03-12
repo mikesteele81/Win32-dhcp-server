@@ -28,3 +28,11 @@ peekMaybeTString ptr
 withMaybeTString :: Maybe String -> (LPTSTR -> IO a) -> IO a
 withMaybeTString Nothing    f = f nullPtr
 withMaybeTString (Just str) f = withTString str f
+
+note :: e -> Maybe a -> Either e a
+note e Nothing = Left e
+note _ (Just x) = Right x
+
+fmapL :: (a -> b) -> Either a r -> Either b r
+fmapL f (Left x) = Left (f x)
+fmapL _ (Right x) = (Right x)

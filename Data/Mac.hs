@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 -- | This module was taken, with modifications, from the
 -- <http://hackage.haskell.org/package/maccatcher maccatcher> package.
 module Data.Mac
@@ -13,12 +15,19 @@ module Data.Mac
     ) where
 
 import Control.Applicative
+import Control.Monad (unless)
 import Data.Bits
-import Data.List
+import Data.Monoid
+import Data.Text (Text)
+import qualified Data.Text as T
+import qualified Data.Text.Lazy as L
+import qualified Data.Text.Lazy.Builder as L
+import qualified Data.Text.Lazy.Builder.Int as L
+import Data.Text.Read
 import Data.Word
 import Foreign
-import Numeric (showHex)
-import Safe
+
+import Utils
 
 -- |A Mac is a 6-byte unique identifier used in layer-two network addressing.
 -- Its `Storable` instance occupies 6 bytes of memory when `poke`d with the
@@ -57,35 +66,41 @@ toWord64 = unMac
 --
 -- >>> showMac ":" $ fromOctets 0x11 0x22 0x33 0x44 0x55 0x66
 -- "11:22:33:44:55:66"
-showMac :: String -> Mac -> String
-showMac sep mac = intercalate sep
-                . map (\n -> pad 2 $ showHex n "")
-                $ [a, b, c, d, e, f]
+showMac :: Text -> Mac -> Text
+showMac sep mac = T.intercalate sep . map octet $ [a, b, c, d, e, f]
   where
+    octet x = pad (2 :: Int) . L.toStrict . L.toLazyText . L.hexadecimal $ x
     (a, b, c, d, e, f) = toOctets mac
+    pad n str = T.replicate (max 0 (n - T.length str)) "0" <> str
 
-pad :: Int -> String -> String
-pad n str = replicate zeroes '0' ++ str
-  where
-    zeroes = max 0 (n - length str)
-
--- |Parse a `String` value as a `Mac`. The string should not use any
+-- |Parse a `Text` value as a `Mac`. The string should not use any
 -- separators between octets.
 --
--- >>> let Just mac = readMac "000102030405"
+-- >>> let Right mac = readMac "000102030405"
 -- >>> toOctets mac
 -- (0, 1, 2, 3, 4, 5)
-readMac :: String -> Maybe Mac
-readMac str = case sequence (go str) of
-    Just [a, b, c, d, e, f] -> Just $ fromOctets a b c d e f
-    _ -> Nothing
-   where
-    go :: String -> [Maybe Word8]
-    -- There should always be 2 characters
-    go [_] = [Nothing]
-    -- We've reached the end
-    go [] = []
-    go s = let (b, rest) = splitAt 2 s in readMay ("0x" ++ b) : go rest
+readMac :: Text -> Either String Mac
+readMac s = fmapL (\e -> "Error parsing MAC address: " ++ e) $ do
+    (a, s2) <- octet s
+    (b, s3) <- octet s2
+    (c, s4) <- octet s3
+    (d, s5) <- octet s4
+    (e, s6) <- octet s5
+    (f, s7) <- octet s6
+    unless (s7 == "") $ Left "exactly 6 octets were expected."
+    fromOctets <$> digit a <*> digit b <*> digit c
+               <*> digit d <*> digit e <*> digit f
+  where
+    octet :: Text -> Either String (Int, Text)
+    octet s0 = do
+        (a, s2) <- hexadecimal a0
+        unless (s2 == "") $ Left "invalid characters"
+        return (a, rest)
+      where
+        (a0, rest) = T.splitAt 2 s0
+    digit :: Int -> Either String Word8
+    digit x | x < 0 || x > 255 = Left "digit out of range."
+            | otherwise = Right $ fromIntegral x
 
 -- |A Mac address is 48-bits wide. This function will construct a `Mac` from
 -- 6 octets.

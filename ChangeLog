@@ -1,0 +1,6 @@
+0.2
+===
+
+* All functions throw Win32Exception exceptions.
+* strict Text values are favored over String
+* drop dependency on safe

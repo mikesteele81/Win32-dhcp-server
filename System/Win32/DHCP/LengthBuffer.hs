@@ -9,7 +9,6 @@ import Foreign.Storable
 import System.Win32.Types (DWORD)
 
 import System.Win32.DHCP.DhcpStructure
-import Utils (freeptr)
 
 -- |A LengthBuffer is a list of items which can be marshalled in and out
 -- of memory with a `DhcpArray` instance. 

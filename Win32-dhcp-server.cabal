@@ -1,6 +1,6 @@
 Name:                Win32-dhcp-server
 Synopsis:            Win32 DHCP Server Management API.
-Version:             0.1
+Version:             0.2
 License:             BSD3
 License-file:        LICENSE
 Author:              Michael Steele
@@ -17,7 +17,7 @@ Description:
   This package provides a partial binding to the Win32 DHCP Server Management
   API. Its purpose is to query and control a Microsoft DHCP server. Enough
   functionality is defined so so that Ipv4 client lease and reservation
-  records can be manipulated from software.
+  records can be manipulated programmatically.
   .
   Here are a few notes on the required environment:
   .
@@ -35,6 +35,7 @@ Description:
   .
   import Data.Ip
   import Data.Mac
+  import qualified Data.Text.IO as T
   import System.Win32.DHCP
   .
   main :: IO ()
@@ -42,16 +43,20 @@ Description:
   &#x20;   api <- loadDHCP
   &#x20;   clients <- enumClients api context
   &#x20;   let macs = map (showMac \":\" . clientHardwareAddress) clients
-  &#x20;   mapM_ putStrLn macs
+  &#x20;   mapM_ T.putStrLn macs
   &#x20; where
-  &#x20;   Just subnet = readIp \"192.168.1.0\"
+  &#x20;   Right subnet = readIp \"192.168.1.0\"
   &#x20;   context = Context \"192.168.1.5\" subnet
   @
+extra-source-files:
+    ChangeLog
+    examples/*.hs
 
 Library
-  Build-depends: base  >= 4.6
-               , safe
+  Build-depends: base         >= 4.6  && < 4.8
+               , text          > 0.11 && < 1.2
                , Win32
+               , Win32-errors >= 0.2  && < 1.0
   default-language: Haskell2010
   Exposed-modules: Data.Ip
                  , Data.Mac
