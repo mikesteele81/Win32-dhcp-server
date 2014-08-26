@@ -44,6 +44,7 @@ freeLb dict freefunc ptr = do
     -- buffer itself.
     pElements <- peek $ ppElements ptr
     freeDhcpArray dict freefunc len pElements
+    freefunc . castPtr $ ptr
 
 withLb' :: DhcpArray a -> LengthBuffer a -> Ptr (LengthBuffer a) -> IO r -> IO r
 withLb' dict (LengthBuffer _ elems) ptr f =
