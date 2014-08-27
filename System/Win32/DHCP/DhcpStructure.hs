@@ -140,7 +140,9 @@ basePeekArray dict numElements ptr
 -- at once after each element's children are freed.
 baseFreeArray :: DhcpStructure a
     -> (forall x. Ptr x -> IO ()) -> Int -> Ptr a -> IO ()
-baseFreeArray dict freefunc len ptr = f (len - 1)
+baseFreeArray dict freefunc len ptr = do
+    f (len - 1)
+    freefunc ptr
   where
     f 0 = freeDhcpChildren dict freefunc ptr
     f n = do
@@ -175,7 +177,10 @@ ptrPeekArray dict numElements ptr
 
 ptrFreeArray :: DhcpStructure a
     -> (forall x. Ptr x -> IO ()) -> Int -> Ptr a -> IO ()
-ptrFreeArray dict freefunc len ptr = f (len - 1)
+ptrFreeArray dict freefunc len ptr = do
+    -- Scan through and free each element
+    f (len - 1)
+    freefunc ptr
   where
     --Each element is a pointer to the real data
     pptr = castPtr ptr
