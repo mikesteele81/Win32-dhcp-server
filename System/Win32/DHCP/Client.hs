@@ -36,7 +36,8 @@ data Client = Client
     , clientName            :: Maybe String
     , clientComment         :: Maybe String
     , clientLeaseExpires    :: !DATE_TIME
-    -- ^ MSDN: The date and time the DHCP client lease will expire, in UTC time.
+    -- ^ MSDN: The date and time the DHCP client lease will expire, in UTC
+    -- time.
     --
     -- I don't know of any available functions to work with a `DATE_TIME`.
     , clientOwnerHost       :: !HOST_INFO
