@@ -1,3 +1,5 @@
+{-# LANGUAGE RankNTypes #-}
+
 module System.Win32.DHCP.Reservation
     ( Mapping (..)
     , Reservation (..)

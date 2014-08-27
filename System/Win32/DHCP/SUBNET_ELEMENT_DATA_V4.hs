@@ -1,3 +1,5 @@
+{-# LANGUAGE RankNTypes #-}
+
 module System.Win32.DHCP.SUBNET_ELEMENT_DATA_V4
     ( SUBNET_ELEMENT_DATA_V4 (..)
     , SUBNET_ELEMENT_TYPE
