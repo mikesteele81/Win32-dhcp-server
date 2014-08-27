@@ -1,3 +1,8 @@
+0.2.1
+=====
+
+* bug fix: Internal memory structures were not being freed properly.
+
 0.2
 ===
 

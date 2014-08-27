@@ -1,6 +1,6 @@
 Name:                Win32-dhcp-server
-Synopsis:            Win32 DHCP Server Management API.
-Version:             0.2
+Synopsis:            Win32 DHCP Server Management API
+Version:             0.2.1
 License:             BSD3
 License-file:        LICENSE
 Author:              Michael Steele
@@ -11,7 +11,7 @@ Bug-Reports:         http://github.com/mikesteele81/win32-dhcp-server/issues
 Category:            System
 Build-type:          Simple
 Cabal-version:       >=1.14
-Tested-With:         GHC == 7.6.3
+Tested-With:         GHC == 7.8.3
 Stability:           provisional
 Description:
   This package provides a partial binding to the Win32 DHCP Server Management
@@ -54,8 +54,8 @@ extra-source-files:
 
 Library
   Build-depends: base         >= 4.6  && < 4.8
-               , text          > 0.11 && < 1.2
-               , Win32
+               , text         >  0.11 && < 1.2
+               , Win32        >= 2.2  && < 2.4
                , Win32-errors >= 0.2  && < 1.0
   default-language: Haskell2010
   Exposed-modules: Data.Ip
