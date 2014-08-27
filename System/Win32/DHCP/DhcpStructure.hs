@@ -8,8 +8,6 @@ import Foreign.Marshal.Alloc (allocaBytes)
 import Foreign.Ptr
 import Foreign.Storable
 
-import Utils (freeptr)
-
 -- |Function dictionary for objects used with the DHCP api.
 --  * Ability to peek from a pointer to that object.
 --  * Ability to properly free an object using Win32's rpcFreeMemory
@@ -26,13 +24,27 @@ import Utils (freeptr)
 --    call a continuation on that block of memory.
 data DhcpStructure a = DhcpStructure
     { peekDhcp  :: Ptr a -> IO a
-    , freeDhcp  :: forall x. (Ptr x -> IO ()) -> Ptr a -> IO ()
+    -- |Cleaning up memory is the responsibility of the client of this
+    -- library. Most out parameters return compound structures which need to
+    -- be recursively navigated, freeing all children, before freeing the main
+    -- pointer.
+    --
+    -- This function only frees child objects without freeing the pointer
+    -- itself. It's necessary because some structures contained inline
+    -- structures instead of the usual pointer. A separate 'freeDhcp' function
+    -- will call this one before freeing its supplied pointer.
+    , freeDhcpChildren  :: (forall x. Ptr x -> IO ()) -> Ptr a -> IO ()
     -- |Like `withDhcp`, but without any allocation or cleanup of memory.
     -- The continuation is not automatically given a pointer because
     -- the caller should already have it.
     , withDhcp' :: forall r. a -> Ptr a -> IO r -> IO r
     , sizeDhcp :: Int
     }
+
+freeDhcp :: DhcpStructure a -> (forall x. Ptr x -> IO ()) -> Ptr a -> IO ()
+freeDhcp dict free ptr = do
+    freeDhcpChildren dict free ptr
+    free ptr
 
 -- |Allocate memory for a structure, poke it into memory, apply
 -- a function, and then clean up the memory.
@@ -48,23 +60,26 @@ newtypeDhcpStructure wrap unwrap dict =
     DhcpStructure peekNt freeNt withNt' (sizeDhcp dict)
   where
     peekNt ptr = wrap <$> peekDhcp dict (castPtr ptr)
-    freeNt f = freeDhcp dict f . castPtr
+    freeNt :: (forall x. Ptr x -> IO ()) -> Ptr a -> IO ()
+    freeNt f ptr = freeDhcpChildren dict f (castPtr ptr)
     withNt' a ptr f = withDhcp' dict (unwrap a) (castPtr ptr) f
 
+-- |This is used in cases like 'CLIENT_UID' where we want to treat it like
+-- a 'LengthArray' but individual elements of the array are simple values.
+-- We reuse the 'Storable' instances peek and poke functions.
 storableDhcpStructure :: forall a. (Storable a) => DhcpStructure a
 storableDhcpStructure = DhcpStructure
     { peekDhcp  = peek
-    , freeDhcp  = free
+    , freeDhcpChildren  = \freeFunc ptr -> freeFunc ptr
     , withDhcp' = withStorable'
     , sizeDhcp  = sizeOf (undefined :: a)
     }
   where
-    free freefunc ptr = freeptr freefunc $ castPtr ptr
     withStorable' x ptr f = poke ptr x >> f
 
 data DhcpArray a = DhcpArray
     { peekDhcpArray  :: Int -> Ptr a -> IO [a]
-    , freeDhcpArray  :: forall x. (Ptr x -> IO ()) -> Int -> Ptr a -> IO ()
+    , freeDhcpArray  :: (forall x. Ptr x -> IO ()) -> Int -> Ptr a -> IO ()
     , withDhcpArray' :: forall r. [a] -> Ptr a -> IO r -> IO r
     , dhcpStructure   :: DhcpStructure a
     }
@@ -121,12 +136,15 @@ basePeekArray dict numElements ptr
         e <- peekDhcp dict (ptr `plusPtr` (sizeDhcp dict * n))
         f (n - 1) (e:acc)
 
-baseFreeArray :: DhcpStructure a -> (Ptr x -> IO ()) -> Int -> Ptr a -> IO ()
+-- |Elements are arranged end to end in a buffer. The buffer is freed
+-- at once after each element's children are freed.
+baseFreeArray :: DhcpStructure a
+    -> (forall x. Ptr x -> IO ()) -> Int -> Ptr a -> IO ()
 baseFreeArray dict freefunc len ptr = f (len - 1)
   where
-    f 0 = freeDhcp dict freefunc ptr
+    f 0 = freeDhcpChildren dict freefunc ptr
     f n = do
-        freeDhcp dict freefunc $ ptr `plusPtr` (n * sizeDhcp dict)
+        freeDhcpChildren dict freefunc $ ptr `plusPtr` (n * sizeDhcp dict)
         f (n - 1)
 
 baseWithArray' :: DhcpStructure a -> [a] -> Ptr a -> IO r -> IO r
@@ -136,7 +154,8 @@ baseWithArray' dict (e:es) ptr f =
     withDhcp' dict e ptr
     $ baseWithArray' dict es (ptr `plusPtr` sizeDhcp dict) f
 
-basicFreeArray :: DhcpStructure a -> (Ptr x -> IO ()) -> Int -> Ptr a -> IO ()
+basicFreeArray :: DhcpStructure a -> (forall x. Ptr x -> IO ())
+    -> Int -> Ptr a -> IO ()
 basicFreeArray dict freefunc _ ptr = freeDhcp dict freefunc ptr
 
 ptrPeekArray :: DhcpStructure a -> Int -> Ptr a -> IO [a]
@@ -154,7 +173,8 @@ ptrPeekArray dict numElements ptr
         e <- peekDhcp dict pe
         f (n - 1) (e:acc)
 
-ptrFreeArray :: DhcpStructure a -> (Ptr x -> IO ()) -> Int -> Ptr a -> IO ()
+ptrFreeArray :: DhcpStructure a
+    -> (forall x. Ptr x -> IO ()) -> Int -> Ptr a -> IO ()
 ptrFreeArray dict freefunc len ptr = f (len - 1)
   where
     --Each element is a pointer to the real data

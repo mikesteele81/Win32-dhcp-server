@@ -48,7 +48,7 @@ type SUBNET_ELEMENT_TYPE = CInt
 subnetElementData :: DhcpStructure SUBNET_ELEMENT_DATA_V4
 subnetElementData = DhcpStructure
     { peekDhcp = peekSubnetElementData
-    , freeDhcp = freeSubnetElementData
+    , freeDhcpChildren = freeSubnetElementData
     , withDhcp' = withSubnetElementData'
     , sizeDhcp = 8
     }
@@ -65,7 +65,8 @@ peekSubnetElementData ptr = do
       4 -> IpUsedCluster    <$> peek (castPtr pElement)
       _ -> error "Invalid element type found in SUBNET_ELEMENT_DATA_V4."
 
-freeSubnetElementData :: (Ptr a -> IO ()) -> Ptr SUBNET_ELEMENT_DATA_V4 -> IO ()
+freeSubnetElementData :: (forall x. Ptr x -> IO ())
+    -> Ptr SUBNET_ELEMENT_DATA_V4 -> IO ()
 freeSubnetElementData freefunc ptr = do
     elementType <- (peek . castPtr) ptr :: IO SUBNET_ELEMENT_TYPE
     pElement <- peek $ ppElement ptr
@@ -77,7 +78,6 @@ freeSubnetElementData freefunc ptr = do
       4 -> return ()
       _ -> error "Invalid element type found in SUBNET_ELEMENT_DATA_V4."
     poke (ppElement ptr) nullPtr
-    freefunc $ castPtr ptr
 
 -- Also used by withSubnetElementDataArray.
 withSubnetElementData' :: SUBNET_ELEMENT_DATA_V4 -> Ptr SUBNET_ELEMENT_DATA_V4

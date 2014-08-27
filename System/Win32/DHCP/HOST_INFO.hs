@@ -25,7 +25,7 @@ data HOST_INFO = HOST_INFO !Ip (Maybe String) (Maybe String)
 hostInfo :: DhcpStructure HOST_INFO
 hostInfo = DhcpStructure
     { peekDhcp = peekHostInfo
-    , freeDhcp = freeHostInfoChildren
+    , freeDhcpChildren = freeHostInfoChildren
     , withDhcp' = withHostInfo'
     , sizeDhcp = 12
     }
@@ -46,7 +46,7 @@ withHostInfo' (HOST_INFO ip netbiosname hostname) ptr f =
     pokeByteOff (castPtr ptr) 8 phostname
     f
 
-freeHostInfoChildren :: (Ptr a -> IO ()) -> Ptr HOST_INFO -> IO ()
+freeHostInfoChildren :: (forall x. Ptr x -> IO ()) -> Ptr HOST_INFO -> IO ()
 freeHostInfoChildren rpcfree phi = do
     freeptr rpcfree $ ppnetBiosName phi
     freeptr rpcfree $ pphostName phi

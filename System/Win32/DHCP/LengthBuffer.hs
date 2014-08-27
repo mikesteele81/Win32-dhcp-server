@@ -28,7 +28,7 @@ data LengthBuffer a = LengthBuffer
 lengthBuffer :: DhcpArray a -> DhcpStructure (LengthBuffer a)
 lengthBuffer dict = DhcpStructure
     { peekDhcp = peekLb dict
-    , freeDhcp = freeLb dict
+    , freeDhcpChildren = freeLb dict
     , withDhcp' = withLb' dict
     , sizeDhcp = 8
     }
@@ -39,14 +39,14 @@ peekLb dict ptr = do
     pElements <- peek $ ppElements ptr
     LengthBuffer len <$> peekDhcpArray dict len pElements
 
-freeLb :: DhcpArray a -> (Ptr x -> IO ()) -> Ptr (LengthBuffer a) -> IO ()
+freeLb :: DhcpArray a -> (forall x. Ptr x -> IO ())
+    -> Ptr (LengthBuffer a) -> IO ()
 freeLb dict freefunc ptr = do
     len <- fromIntegral <$> peek (pNumElements ptr)
     -- A LengthBuffer contain a pointer to the buffer; not the start of the
     -- buffer itself.
     pElements <- peek $ ppElements ptr
     freeDhcpArray dict freefunc len pElements
-    freefunc . castPtr $ ptr
 
 withLb' :: DhcpArray a -> LengthBuffer a -> Ptr (LengthBuffer a) -> IO r -> IO r
 withLb' dict (LengthBuffer _ elems) ptr f =

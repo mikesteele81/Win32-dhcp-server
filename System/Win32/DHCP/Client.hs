@@ -50,7 +50,7 @@ data Client = Client
 clientInfo :: DhcpStructure Client
 clientInfo = DhcpStructure
     { peekDhcp = peekClientInfoV4
-    , freeDhcp = freeClientInfoV4
+    , freeDhcpChildren = freeClientInfoV4
     , withDhcp' = withClientInfo'
     -- 12-byte alignment because of the inlined HOST_INFO struct
     , sizeDhcp = 48
@@ -85,13 +85,15 @@ peekClientInfoV4 ptr = Client
     <*> (peekDhcp hostInfo $ pownerHost ptr)
     <*> (peek $ pclientType ptr)
 
-freeClientInfoV4 :: (Ptr a -> IO ()) -> Ptr Client -> IO ()
+freeClientInfoV4 :: (forall a. Ptr a -> IO ()) -> Ptr Client -> IO ()
 freeClientInfoV4 freefunc ptr = do
-    freeDhcp clientUid freefunc $ pmac ptr
+    -- The client_uid is inlined into the client_info structure.
+    freeDhcpChildren clientUid freefunc $ pmac ptr
     freeptr freefunc $ ppclientName ptr
     freeptr freefunc $ ppclientComment ptr
-    freeDhcp hostInfo freefunc $ pownerHost ptr
-    freefunc $ castPtr ptr
+    -- The HOST_INFO structure is inlined within the ClientInfoV4, so we don't
+    -- have to free its main pointer.
+    freeDhcpChildren hostInfo freefunc $ pownerHost ptr
 
 pclientIP :: Ptr Client -> Ptr Ip
 pclientIP = castPtr
