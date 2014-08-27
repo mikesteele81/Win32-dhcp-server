@@ -243,9 +243,7 @@ enumSubnetClientsV4 dhcp server subnet =
                        freeDhcp clientInfoArray (rpcFreeMemory dhcp) pInfoArray
                        poke ppInfoArray nullPtr
                        return elems
-            elementsTotal <- peek pElementsTotal
-            elementsRead <- peek pElementsRead
-            if (ret == E.NoMoreItems || (ret == E.Success && elementsTotal == elementsRead))
+            if (ret == E.NoMoreItems || ret == E.Success)
               then return (elems:acc)
               else loop (elems:acc)
 
@@ -278,8 +276,11 @@ enumSubnetElementsV4 dhcp server subnet elementType =
                        freeDhcp infoArray (rpcFreeMemory dhcp) pEnumElementInfoArray
                        poke ppEnumElementInfoArray nullPtr
                        return elems
-            elementsTotal <- peek pElementsTotal
-            if (ret == E.NoMoreItems || (ret == E.Success && elementsTotal == 0))
+            -- Intentionally ignore elementsTotal. Microsoft's documentation
+            -- on how this should work doesn't seem right. In my testing
+            -- elementsTotal always returns 0x7fffffff until the last loop, at
+            -- which time it always matches elementsRead.
+            if (ret == E.NoMoreItems || ret == E.Success)
               then return (elems:acc)
               else loop (elems:acc)
 
