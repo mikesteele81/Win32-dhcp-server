@@ -32,6 +32,7 @@ module System.Win32.DHCP
 import Control.Applicative
 import Control.Monad (unless)
 import Data.Char (chr)
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Foreign as T
@@ -54,6 +55,7 @@ import System.Win32.DHCP.SUBNET_CLIENT_INFO_ARRAY_V4
 import System.Win32.DHCP.SUBNET_ELEMENT_DATA_V4
 import System.Win32.DHCP.SUBNET_ELEMENT_INFO_ARRAY_V4
 import System.Win32.DHCP.Types
+import Utils
 
 -- | A Context defines which server and scope within that server a command
 -- refers to.  Microsoft's DHCP server supports multiple scopes. This allows
@@ -140,14 +142,14 @@ lookupClient api serverip si =
     siPayload <- peekElemOff (castPtr psi :: Ptr (Ptr ())) 4
     E.failUnlessSuccess "GetClientInfoV4"
         $ c_GetClientInfoV4  api pserverip siType siPayload ppclientinfo
-    pclientinfo <- peek ppclientinfo
-    if pclientinfo == nullPtr
-      then return Nothing
-      else do
+
+    -- Extract client information from out parameter and free the memory
+    -- 'Nothing' will be returned the case where GetClientInfoV4 returns a
+    -- null pointer.
+    scrubWith ppclientinfo $ \pclientinfo -> do
         clientinfo <- peekDhcp clientInfo pclientinfo
         freeDhcp clientInfo (rpcFreeMemory api) pclientinfo
-        poke ppclientinfo nullPtr
-        return $ Just clientinfo
+        return clientinfo
 
 addReservation :: DhcpApi -> Context -> Mapping
     -> IO ()
@@ -235,14 +237,13 @@ enumSubnetClientsV4 dhcp server subnet =
                                    pElementsRead pElementsTotal
             unless (elem ret [E.Success, E.MoreData, E.NoMoreItems])
                 $ E.failWith "EnumSubnetClientsV4" ret
-            pInfoArray <- peek ppInfoArray
-            elems <- if pInfoArray == nullPtr
-                     then return []
-                     else do
-                       SUBNET_CLIENT_INFO_ARRAY_V4 (LengthBuffer _ elems) <- peekDhcp clientInfoArray pInfoArray
-                       freeDhcp clientInfoArray (rpcFreeMemory dhcp) pInfoArray
-                       poke ppInfoArray nullPtr
-                       return elems
+
+            melems <- scrubWith ppInfoArray $ \pInfoArray -> do
+                SUBNET_CLIENT_INFO_ARRAY_V4 (LengthBuffer _ elems) <- peekDhcp clientInfoArray pInfoArray
+                freeDhcp clientInfoArray (rpcFreeMemory dhcp) pInfoArray
+                return elems
+            let elems = fromMaybe [] melems
+
             if (ret == E.NoMoreItems || ret == E.Success)
               then return (elems:acc)
               else loop (elems:acc)
@@ -258,24 +259,23 @@ enumSubnetElementsV4 dhcp server subnet elementType =
     with 0 $ \pResumeHandle ->
     alloca $ \pElementsRead ->
     alloca $ \pElementsTotal ->
-    with nullPtr $ \ppEnumElementInfoArray -> do
+    with nullPtr $ \ppInfoArray -> do
     -- We have to call enumSubnetElementsV4 at least twice for a sucessfull run.
     -- Failure to use the returned resumeHandle may result in an internal access
     -- violation within RPCRT4.dll.
     let loop acc = do
             ret <- E.fromDWORD <$> c_EnumSubnetElementsV4 dhcp pServer (toWord32 subnet) elementType
-                                   pResumeHandle 0xFFFFFFFF ppEnumElementInfoArray
+                                   pResumeHandle 0xFFFFFFFF ppInfoArray
                                    pElementsRead pElementsTotal
             unless (elem ret [E.Success, E.MoreData, E.NoMoreItems])
                 $ E.failWith "EnumSubnetElementsV4" ret
-            pEnumElementInfoArray <- peek ppEnumElementInfoArray
-            elems <- if pEnumElementInfoArray == nullPtr
-                     then return []
-                     else do
-                       SUBNET_ELEMENT_INFO_ARRAY_V4 (LengthBuffer _ elems) <- peekDhcp infoArray pEnumElementInfoArray
-                       freeDhcp infoArray (rpcFreeMemory dhcp) pEnumElementInfoArray
-                       poke ppEnumElementInfoArray nullPtr
-                       return elems
+
+            melems <- scrubWith ppInfoArray $ \pInfoArray -> do
+                SUBNET_ELEMENT_INFO_ARRAY_V4 (LengthBuffer _ elems) <- peekDhcp infoArray pInfoArray
+                freeDhcp infoArray (rpcFreeMemory dhcp) pInfoArray
+                return elems
+            let elems = fromMaybe [] melems
+
             -- Intentionally ignore elementsTotal. Microsoft's documentation
             -- on how this should work doesn't seem right. In my testing
             -- elementsTotal always returns 0x7fffffff until the last loop, at
