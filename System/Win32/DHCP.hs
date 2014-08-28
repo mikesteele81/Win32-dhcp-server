@@ -146,7 +146,7 @@ lookupClient api serverip si =
       else do
         clientinfo <- peekDhcp clientInfo pclientinfo
         freeDhcp clientInfo (rpcFreeMemory api) pclientinfo
-        poke (castPtr pclientinfo) nullPtr
+        poke ppclientinfo nullPtr
         return $ Just clientinfo
 
 addReservation :: DhcpApi -> Context -> Mapping
