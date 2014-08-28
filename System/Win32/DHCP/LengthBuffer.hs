@@ -19,7 +19,7 @@ import System.Win32.DHCP.DhcpStructure
 --   LPElementData Elements;
 -- } Structure, *LPStructure;
 data LengthBuffer a = LengthBuffer
-    { lbLength :: Int
+    { lbLength :: !Int
     , buffer :: [a]
     }
 
