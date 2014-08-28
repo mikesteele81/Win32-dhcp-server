@@ -4,6 +4,7 @@
 module System.Win32.DHCP.DhcpStructure where
 
 import Control.Applicative
+import Control.Monad (when)
 import Foreign.Marshal.Alloc (allocaBytes)
 import Foreign.Ptr
 import Foreign.Storable
@@ -127,22 +128,17 @@ ptrDhcpArray dict = (baseDhcpArray dict)
     }
 
 basePeekArray :: DhcpStructure a -> Int -> Ptr a -> IO [a]
-basePeekArray dict numElements ptr
-  | numElements <= 0 = return []
-  | otherwise = f (numElements - 1) []
+basePeekArray dict len ptr0 = mapM (peekDhcp dict) ptrs
   where
-    f 0 acc = do
-        e <- peekDhcp dict ptr
-        return (e:acc)
-    f n acc = do
-        e <- peekDhcp dict (ptr `plusPtr` (sizeDhcp dict * n))
-        f (n - 1) (e:acc)
+    ptrs = take len . iterate (`plusPtr` sizeDhcp dict) $ ptr0
 
 -- |Elements are arranged end to end in a buffer. The buffer is freed
 -- at once after each element's children are freed.
 baseFreeArray :: DhcpStructure a
     -> (forall x. Ptr x -> IO ()) -> Int -> Ptr a -> IO ()
-baseFreeArray dict freefunc len ptr = do
+baseFreeArray dict freefunc len ptr
+  | len <= 0 = return ()
+  | otherwise = do
     f (len - 1)
     freefunc ptr
   where
@@ -163,33 +159,21 @@ basicFreeArray :: DhcpStructure a -> (forall x. Ptr x -> IO ())
 basicFreeArray dict freefunc _ ptr = freeDhcp dict freefunc ptr
 
 ptrPeekArray :: DhcpStructure a -> Int -> Ptr a -> IO [a]
-ptrPeekArray dict numElements ptr
-  | numElements <= 0 = return []
-  | otherwise = f (numElements - 1) []
+ptrPeekArray dict len ptr = mapM peekElement pptrs
   where
     --Each element is a pointer to the real data
-    pptr = castPtr ptr
-    f 0 acc = do
-        e <- peek pptr >>= peekDhcp dict
-        return (e:acc)
-    f n acc = do
-        pe <- peek $ pptr `plusPtr` (sizeOf nullPtr * n)
-        e <- peekDhcp dict pe
-        f (n - 1) (e:acc)
+    pptrs = take len . iterate (`plusPtr` sizeOf nullPtr) $ castPtr ptr
+    peekElement pptr = peek pptr >>= peekDhcp dict
 
 ptrFreeArray :: DhcpStructure a
     -> (forall x. Ptr x -> IO ()) -> Int -> Ptr a -> IO ()
 ptrFreeArray dict freefunc len ptr = do
-    -- Scan through and free each element
-    f (len - 1)
-    freefunc ptr
+    mapM (freeDhcp dict freefunc `scrubbing_`) pptrs
+    -- Len may very well be 0 in which case there's really nothing to free.
+    when (len > 0) $ freefunc ptr
   where
     --Each element is a pointer to the real data
-    pptr0 = castPtr ptr
-    f 0 = freeDhcp dict freefunc `scrubbing_` pptr0
-    f n = do
-        freeDhcp dict freefunc `scrubbing_` plusPtr pptr0 (sizeOf pptr0 * n)
-        f (n - 1)
+    pptrs = take len . iterate (`plusPtr` sizeOf nullPtr) $ castPtr ptr
 
 ptrWithArray' :: DhcpStructure a -> [a] -> Ptr a -> IO r -> IO r
 ptrWithArray' _    []     _   f = f
