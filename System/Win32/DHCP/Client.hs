@@ -89,8 +89,8 @@ freeClientInfoV4 :: (forall a. Ptr a -> IO ()) -> Ptr Client -> IO ()
 freeClientInfoV4 freefunc ptr = do
     -- The client_uid is inlined into the client_info structure.
     freeDhcpChildren clientUid freefunc $ pmac ptr
-    freeptr freefunc $ ppclientName ptr
-    freeptr freefunc $ ppclientComment ptr
+    freefunc `scrubbing_` ppclientName ptr
+    freefunc `scrubbing_` ppclientComment ptr
     -- The HOST_INFO structure is inlined within the ClientInfoV4, so we don't
     -- have to free its main pointer.
     freeDhcpChildren hostInfo freefunc $ pownerHost ptr

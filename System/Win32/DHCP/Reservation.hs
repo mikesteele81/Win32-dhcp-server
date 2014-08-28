@@ -14,6 +14,7 @@ import Data.Mac
 import System.Win32.DHCP.CLIENT_UID
 import System.Win32.DHCP.DhcpStructure
 import System.Win32.DHCP.Types (ClientType)
+import Utils (scrubbing_)
 
 -- | A Reservation guarantees that a device with a given Mac address will
 -- always be assigned to a particular IP address. A reservation is not the
@@ -65,8 +66,7 @@ peekReservation ptr = do
 
 freeReservation :: (forall x. Ptr x -> IO ()) -> Ptr Reservation -> IO ()
 freeReservation freefunc ptr = do
-    peek (ppCuid ptr) >>= freeDhcp clientUid freefunc
-    poke (ppCuid ptr) nullPtr
+    freeDhcp clientUid freefunc `scrubbing_` ppCuid ptr
 
 ppCuid :: Ptr Reservation -> Ptr (Ptr CLIENT_UID)
 ppCuid ptr = castPtr ptr `plusPtr` 4

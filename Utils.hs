@@ -1,22 +1,30 @@
 module Utils where
 
 import Control.Applicative
-import Control.Monad (unless)
 import Foreign
 
 import System.Win32.Types
 
--- |Many DHCP functions return a large object composed of pointers to other
---  objects. When it comes time to clean up memory we need to walk through
---  the structure. This helper function calls an action to get a pointer
---  to free (usually a variant of peek), and then calls the supplied free
---  action on it. Finally, the pointer is zeroed out.
-freeptr :: (Ptr b -> IO ()) -> Ptr (Ptr a) -> IO ()
-freeptr rpcfree pptr =
-    peek pptr >>= \ptr ->
-    unless (ptr == nullPtr) $ do
-    rpcfree $ castPtr ptr
-    poke pptr nullPtr
+-- | Perform an action over a double pointer, and then zero it out. If the
+-- double pointer is already zeroed out, do nothing and return 'Nothing'.
+scrubbing :: (Ptr a -> IO b) -> Ptr (Ptr a) -> IO (Maybe b)
+scrubbing f pptr = do
+    ptr <- peek pptr
+    if ptr == nullPtr
+      then return Nothing
+      else do
+        ret <- f ptr
+        poke pptr nullPtr
+        return $ Just ret
+
+-- |Perform a cleanup operation on memory.
+scrubbing_ :: (Ptr a -> IO ()) -> Ptr (Ptr a) -> IO ()
+scrubbing_ f pptr = do
+    _ <- scrubbing f pptr
+    return ()
+
+scrubWith :: Ptr (Ptr a) -> (Ptr a -> IO b) -> IO (Maybe b)
+scrubWith = flip scrubbing
 
 -- |Peek a string that might be null. Null pointers become Nothing
 peekMaybeTString :: LPTSTR -> IO (Maybe String)

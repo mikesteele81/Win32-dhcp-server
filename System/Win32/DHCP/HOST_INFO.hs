@@ -48,8 +48,8 @@ withHostInfo' (HOST_INFO ip netbiosname hostname) ptr f =
 
 freeHostInfoChildren :: (forall x. Ptr x -> IO ()) -> Ptr HOST_INFO -> IO ()
 freeHostInfoChildren rpcfree phi = do
-    freeptr rpcfree $ ppnetBiosName phi
-    freeptr rpcfree $ pphostName phi
+    rpcfree `scrubbing_` ppnetBiosName phi
+    rpcfree `scrubbing_` pphostName phi
 
 ppnetBiosName :: Ptr HOST_INFO -> Ptr LPWSTR
 ppnetBiosName ptr = castPtr ptr `plusPtr` 4
