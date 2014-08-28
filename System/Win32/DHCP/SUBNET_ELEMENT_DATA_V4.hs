@@ -16,6 +16,7 @@ import System.Win32.DHCP.HOST_INFO
 import System.Win32.DHCP.IP_CLUSTER
 import System.Win32.DHCP.IP_RANGE
 import System.Win32.DHCP.Reservation
+import Utils
 
 -- typedef struct _DHCP_SUBNET_ELEMENT_DATA_V4 {
 --   DHCP_SUBNET_ELEMENT_TYPE ElementType;
@@ -69,15 +70,14 @@ freeSubnetElementData :: (forall x. Ptr x -> IO ())
     -> Ptr SUBNET_ELEMENT_DATA_V4 -> IO ()
 freeSubnetElementData freefunc ptr = do
     elementType <- (peek . castPtr) ptr :: IO SUBNET_ELEMENT_TYPE
-    pElement <- peek $ ppElement ptr
-    case elementType of
-      0 -> return ()
-      1 -> freeDhcp hostInfo freefunc $ castPtr pElement
-      2 -> freeDhcp reservation freefunc $ castPtr pElement
-      3 -> return ()
-      4 -> return ()
-      _ -> error "Invalid element type found in SUBNET_ELEMENT_DATA_V4."
-    poke (ppElement ptr) nullPtr
+    scrubWith_ (ppElement ptr) $ \pElement -> do
+        case elementType of
+          0 -> return ()
+          1 -> freeDhcp hostInfo freefunc $ castPtr pElement
+          2 -> freeDhcp reservation freefunc $ castPtr pElement
+          3 -> return ()
+          4 -> return ()
+          _ -> error "Invalid element type found in SUBNET_ELEMENT_DATA_V4."
 
 -- Also used by withSubnetElementDataArray.
 withSubnetElementData' :: SUBNET_ELEMENT_DATA_V4 -> Ptr SUBNET_ELEMENT_DATA_V4

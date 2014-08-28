@@ -12,6 +12,8 @@ import System.Win32.Types (DWORD)
 
 import System.Win32.DHCP.DhcpStructure
 
+import Utils
+
 -- |A LengthBuffer is a list of items which can be marshalled in and out
 -- of memory with a `DhcpArray` instance. A C structure that can be used
 -- with this looks something like the following:
@@ -45,8 +47,7 @@ freeLb dict freefunc ptr = do
     len <- fromIntegral <$> peek (pNumElements ptr)
     -- A LengthBuffer contain a pointer to the buffer; not the start of the
     -- buffer itself.
-    pElements <- peek $ ppElements ptr
-    freeDhcpArray dict freefunc len pElements
+    freeDhcpArray dict freefunc len `scrubbing_` ppElements ptr
 
 withLb' :: DhcpArray a -> LengthBuffer a -> Ptr (LengthBuffer a) -> IO r -> IO r
 withLb' dict (LengthBuffer _ elems) ptr f =

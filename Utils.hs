@@ -26,6 +26,11 @@ scrubbing_ f pptr = do
 scrubWith :: Ptr (Ptr a) -> (Ptr a -> IO b) -> IO (Maybe b)
 scrubWith = flip scrubbing
 
+scrubWith_ :: Ptr (Ptr a) -> (Ptr a -> IO ()) -> IO ()
+scrubWith_ pptr f = do
+    _ <-scrubWith pptr f
+    return ()
+
 -- |Peek a string that might be null. Null pointers become Nothing
 peekMaybeTString :: LPTSTR -> IO (Maybe String)
 peekMaybeTString ptr

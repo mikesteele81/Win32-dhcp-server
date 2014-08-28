@@ -8,6 +8,8 @@ import Foreign.Marshal.Alloc (allocaBytes)
 import Foreign.Ptr
 import Foreign.Storable
 
+import Utils
+
 -- |Function dictionary for objects used with the DHCP api.
 --  * Ability to peek from a pointer to that object.
 --  * Ability to properly free an object using Win32's rpcFreeMemory
@@ -183,11 +185,10 @@ ptrFreeArray dict freefunc len ptr = do
     freefunc ptr
   where
     --Each element is a pointer to the real data
-    pptr = castPtr ptr
-    f 0 = peek pptr >>= freeDhcp dict freefunc
+    pptr0 = castPtr ptr
+    f 0 = freeDhcp dict freefunc `scrubbing_` pptr0
     f n = do
-        pElem <- peek $ pptr `plusPtr` (sizeOf nullPtr * n)
-        freeDhcp dict freefunc pElem
+        freeDhcp dict freefunc `scrubbing_` plusPtr pptr0 (sizeOf pptr0 * n)
         f (n - 1)
 
 ptrWithArray' :: DhcpStructure a -> [a] -> Ptr a -> IO r -> IO r
