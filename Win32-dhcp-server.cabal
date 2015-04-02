@@ -11,7 +11,7 @@ Bug-Reports:         http://github.com/mikesteele81/win32-dhcp-server/issues
 Category:            System
 Build-type:          Simple
 Cabal-version:       >=1.16
-Tested-With:         GHC == 7.8.3
+Tested-With:         GHC == 7.6.3, GHC == 7.8.3, GHC == 7.10.1
 Stability:           provisional
 Description:
   This package provides a partial binding to the Win32 DHCP Server Management
