@@ -10,7 +10,7 @@ Homepage:            http://github.com/mikesteele81/win32-dhcp-server
 Bug-Reports:         http://github.com/mikesteele81/win32-dhcp-server/issues
 Category:            System
 Build-type:          Simple
-Cabal-version:       >=1.14
+Cabal-version:       >=1.16
 Tested-With:         GHC == 7.8.3
 Stability:           provisional
 Description:
