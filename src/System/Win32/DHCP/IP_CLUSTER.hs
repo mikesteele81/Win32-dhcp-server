@@ -2,12 +2,8 @@ module System.Win32.DHCP.IP_CLUSTER
     ( IP_CLUSTER (..)
     ) where
 
-import Control.Applicative
-import Foreign
-
-import System.Win32.Types
-
 import Data.Ip
+import Import
 
 -- typedef struct _DHCP_IP_CLUSTER {
 --   DHCP_IP_ADDRESS ClusterAddress;

@@ -5,18 +5,13 @@ module System.Win32.DHCP.Client
   , clientInfo
   ) where
 
-import Control.Applicative
-import Foreign
-
-import System.Win32.Types
-
 import Data.Ip
 import Data.Mac
+import Import
 import System.Win32.DHCP.CLIENT_UID
 import System.Win32.DHCP.DhcpStructure
 import System.Win32.DHCP.HOST_INFO
 import System.Win32.DHCP.Types
-import Utils
 
 -- | Information about an active lease. This type corresponds to
 -- MSDN's DHCP_CLIENT_INFO_V4 structure.

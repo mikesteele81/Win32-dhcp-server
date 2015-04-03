@@ -7,16 +7,12 @@ module System.Win32.DHCP.SUBNET_ELEMENT_DATA_V4
     , subnetElementData
     ) where
 
-import Control.Applicative
-import Foreign
-import Foreign.C.Types
-
+import Import
 import System.Win32.DHCP.DhcpStructure
 import System.Win32.DHCP.HOST_INFO
 import System.Win32.DHCP.IP_CLUSTER
 import System.Win32.DHCP.IP_RANGE
 import System.Win32.DHCP.Reservation
-import Utils
 
 -- typedef struct _DHCP_SUBNET_ELEMENT_DATA_V4 {
 --   DHCP_SUBNET_ELEMENT_TYPE ElementType;

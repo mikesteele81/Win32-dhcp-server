@@ -3,13 +3,9 @@
 
 module System.Win32.DHCP.DhcpStructure where
 
-import Control.Applicative
 import Control.Monad (when)
-import Foreign.Marshal.Alloc (allocaBytes)
-import Foreign.Ptr
-import Foreign.Storable
 
-import Utils
+import Import
 
 -- |Function dictionary for objects used with the DHCP api.
 --  * Ability to peek from a pointer to that object.
@@ -21,7 +17,7 @@ import Utils
 --
 -- Extra features made possible by the typeclass
 --  * Ability to turn any Storable instance into a DhpcStructure instance
---    by wrapping it into a StorableDhcpStructure.
+--    by wrapping it into a 'storableDhcpStructure'.
 --  * Ability to peek an array of DHCP structures into a list.
 --  * Ability to poke a list of objects into contiguous memory, then
 --    call a continuation on that block of memory.
@@ -68,8 +64,10 @@ newtypeDhcpStructure wrap unwrap dict =
     withNt' a ptr f = withDhcp' dict (unwrap a) (castPtr ptr) f
 
 -- |This is used in cases like 'CLIENT_UID' where we want to treat it like
--- a 'LengthArray' but individual elements of the array are simple values.
--- We reuse the 'Storable' instances peek and poke functions.
+-- a 'LengthArray' but individual elements of the array are simple values that
+-- do not need to be freed individually. An example of this (and the only
+-- place where it is used) is 'CLIENT_UID'. We reuse the 'Storable' instances
+-- peek and poke functions.
 storableDhcpStructure :: forall a. (Storable a) => DhcpStructure a
 storableDhcpStructure = DhcpStructure
     { peekDhcp  = peek

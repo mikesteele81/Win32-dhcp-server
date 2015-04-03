@@ -15,16 +15,14 @@ module Data.Ip
     , toWord32
     ) where
 
-import Control.Applicative
 import Control.Monad (unless)
 import Data.Bits
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Read
 import Data.Word
-import Foreign
 
-import Utils (fmapL, note)
+import Import
 
 -- |An Ip can be used as an IP address or subnet address.
 --

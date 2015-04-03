@@ -5,10 +5,7 @@ module System.Win32.DHCP.Types
   , RESUME_HANDLE
   ) where
 
-import Control.Applicative
-import Foreign
-
-import System.Win32.Types
+import Import
 
 -- | Microsoft's DHCP server supports DHCP and BOOTP. Both protocols server
 -- similar purposes, but DHCP is more widely used. Lease and reservation

@@ -5,14 +5,9 @@ module System.Win32.DHCP.HOST_INFO
     , hostInfo
     ) where
 
-import Control.Applicative
-import Foreign
-
-import System.Win32.Types
-
 import Data.Ip
+import Import
 import System.Win32.DHCP.DhcpStructure
-import Utils
 
 -- typedef struct _DHCP_HOST_INFO {
 --   DHCP_IP_ADDRESS IpAddress;

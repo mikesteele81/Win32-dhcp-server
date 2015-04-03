@@ -12,6 +12,7 @@ import System.Win32.Types
 import Data.Mac
 import System.Win32.DHCP.DhcpStructure
 import System.Win32.DHCP.LengthBuffer
+
 -- typedef struct _DHCP_BINARY_DATA {
 --   DWORD DataLength;
 --   BYTE  *Data;

@@ -5,14 +5,9 @@ module System.Win32.DHCP.LengthBuffer
   , lengthBuffer
   ) where
 
-import Control.Applicative
-import Foreign.Ptr
-import Foreign.Storable
-import System.Win32.Types (DWORD)
-
 import System.Win32.DHCP.DhcpStructure
 
-import Utils
+import Import
 
 -- |A LengthBuffer is a list of items which can be marshalled in and out
 -- of memory with a `DhcpArray` instance. A C structure that can be used

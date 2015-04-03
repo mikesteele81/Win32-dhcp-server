@@ -1,6 +1,6 @@
 Name:                Win32-dhcp-server
 Synopsis:            Win32 DHCP Server Management API
-Version:             0.3
+Version:             0.3.1
 License:             BSD3
 License-file:        LICENSE
 Author:              Michael Steele
@@ -17,7 +17,8 @@ Description:
   This package provides a partial binding to the Win32 DHCP Server Management
   API. Its purpose is to query and control a Microsoft DHCP server. Enough
   functionality is defined so so that Ipv4 client lease and reservation
-  records can be manipulated programmatically.
+  records can be manipulated programmatically._Only 32-bit versions of GHC are
+  supported at this time._
   .
   Here are a few notes on the required environment:
   .
@@ -58,22 +59,24 @@ Library
                , Win32        >= 2.2  && < 2.4
                , Win32-errors >= 0.2  && < 0.3
   default-language: Haskell2010
+  hs-source-dirs: src
   Exposed-modules: Data.Ip
                  , Data.Mac
                  , System.Win32.DHCP
   Ghc-Options: -funbox-strict-fields -Wall
-  other-modules: Utils
-               , System.Win32.DHCP.Internal
-               , System.Win32.DHCP.Client
-               , System.Win32.DHCP.CLIENT_UID
-               , System.Win32.DHCP.DhcpStructure
-               , System.Win32.DHCP.HOST_INFO
-               , System.Win32.DHCP.IP_CLUSTER
-               , System.Win32.DHCP.IP_RANGE
-               , System.Win32.DHCP.LengthBuffer
-               , System.Win32.DHCP.SEARCH_INFO
-               , System.Win32.DHCP.Reservation
-               , System.Win32.DHCP.SUBNET_CLIENT_INFO_ARRAY_V4
-               , System.Win32.DHCP.SUBNET_ELEMENT_DATA_V4
-               , System.Win32.DHCP.SUBNET_ELEMENT_INFO_ARRAY_V4
-               , System.Win32.DHCP.Types
+  other-modules:
+      Import
+    , System.Win32.DHCP.Internal
+    , System.Win32.DHCP.Client
+    , System.Win32.DHCP.CLIENT_UID
+    , System.Win32.DHCP.DhcpStructure
+    , System.Win32.DHCP.HOST_INFO
+    , System.Win32.DHCP.IP_CLUSTER
+    , System.Win32.DHCP.IP_RANGE
+    , System.Win32.DHCP.LengthBuffer
+    , System.Win32.DHCP.SEARCH_INFO
+    , System.Win32.DHCP.Reservation
+    , System.Win32.DHCP.SUBNET_CLIENT_INFO_ARRAY_V4
+    , System.Win32.DHCP.SUBNET_ELEMENT_DATA_V4
+    , System.Win32.DHCP.SUBNET_ELEMENT_INFO_ARRAY_V4
+    , System.Win32.DHCP.Types

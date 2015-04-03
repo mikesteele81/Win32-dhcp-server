@@ -29,20 +29,11 @@ module System.Win32.DHCP
     , removeReservation
     ) where
 
-import Control.Applicative
 import Control.Monad (unless)
-import Data.Char (chr)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
-import qualified Data.Text as T
-import qualified Data.Text.Foreign as T
-import Foreign
-import Foreign.C.Types
 
-import System.Win32.Types hiding (withTString, withTStringLen)
-import qualified System.Win32.Error as E
-import qualified System.Win32.Error.Foreign as E
-
+import Import
 import Data.Ip
 import System.Win32.DHCP.DhcpStructure
 import System.Win32.DHCP.HOST_INFO
@@ -55,7 +46,6 @@ import System.Win32.DHCP.SUBNET_CLIENT_INFO_ARRAY_V4
 import System.Win32.DHCP.SUBNET_ELEMENT_DATA_V4
 import System.Win32.DHCP.SUBNET_ELEMENT_INFO_ARRAY_V4
 import System.Win32.DHCP.Types
-import Utils
 
 -- | A Context defines which server and scope within that server a command
 -- refers to.  Microsoft's DHCP server supports multiple scopes. This allows
@@ -84,19 +74,19 @@ deleteClient :: DhcpApi
     -- ^ Define how to lookup a client to delete. Only deleting based on
     -- IP addresses have been tested.
     -> IO ()
-    -- ^ This function will throw an 'E.Win32Exception' when the internal Win32
+    -- ^ This function will throw an 'Win32Exception' when the internal Win32
     -- call returnes an error condition. MSDN lists the following exceptions,
     -- but others might be thrown as well:
     --
-    --   ['E.DhcpReservedClient'] The specified DHCP client is a reserved DHCP
+    --   ['DhcpReservedClient'] The specified DHCP client is a reserved DHCP
     --   client.
     --
-    --   ['E.DhcpJetError'] An error occurred while accessing the DHCP server
+    --   ['DhcpJetError'] An error occurred while accessing the DHCP server
     --   database, or the client entry is not present in the database.
 deleteClient api server si =
     withTString server $ \pserver ->
     withSearchInfo si $ \psi ->
-    E.failUnlessSuccess "DeleteClientInfo"
+    failUnlessSuccess "DeleteClientInfo"
     $ c_DeleteClientInfo api pserver psi
 
 -- | Perform a lookup operation for all client lease records within a
@@ -106,11 +96,11 @@ enumClients :: DhcpApi
     -- ^ Specify which server and scope to search for client leases.
     -> IO [Client]
     -- ^ The empty list means that no client records exist for the provided
-    -- subnet. This function will throw an 'E.Win32Exception' when the
+    -- subnet. This function will throw an 'Win32Exception' when the
     -- internal Win32 call returnes an error condition. MSDN lists the
     -- following exceptions, but others might be thrown as well:
     --
-    --   ['E.DhcpJetError'] An error occurred while accessing the DHCP server
+    --   ['DhcpJetError'] An error occurred while accessing the DHCP server
     --   database.
 enumClients dhcp (Context server subnet) =
     enumSubnetClientsV4 dhcp server subnet
@@ -127,11 +117,12 @@ lookupClient :: DhcpApi
     -- ^ Define how to lookup a client. Only searching based on an
     -- IP addresses has been tested.
     -> IO (Maybe Client)
-    -- ^ A `Nothing` indicates that no client was found. This function will throw an 'E.Win32Exception' when the
-    -- internal Win32 call returnes an error condition. MSDN lists the
-    -- following exceptions, but others might be thrown as well:
+    -- ^ A 'Nothing' indicates that no client was found. This function will
+    -- throw an 'Win32Exception' when the internal Win32 call returnes an
+    -- error condition. MSDN lists the following exceptions, but others might
+    -- be thrown as well:
     --
-    --   ['E.DhcpJetError'] An error occurred while accessing the DHCP server
+    --   ['DhcpJetError'] An error occurred while accessing the DHCP server
     --   database.
 lookupClient api serverip si =
     withTString serverip $ \pserverip ->
@@ -140,7 +131,7 @@ lookupClient api serverip si =
     -- DhcpGetClientInfo takes a structure on the stack.
     siType <- peek (castPtr psi :: Ptr CInt)
     siPayload <- peekElemOff (castPtr psi :: Ptr (Ptr ())) 4
-    E.failUnlessSuccess "GetClientInfoV4"
+    failUnlessSuccess "GetClientInfoV4"
         $ c_GetClientInfoV4  api pserverip siType siPayload ppclientinfo
 
     -- Extract client information from out parameter and free the memory
@@ -153,23 +144,23 @@ lookupClient api serverip si =
 
 addReservation :: DhcpApi -> Context -> Mapping
     -> IO ()
-    -- ^ This function will throw an 'E.Win32Exception' when the internal Win32
+    -- ^ This function will throw an 'Win32Exception' when the internal Win32
     -- call returnes an error condition. MSDN lists the following exceptions,
     -- but others might be thrown as well:
     --
-    --   ['E.DhcpSubnetNotPresent'] The specified IPv4 subnet does not exist
+    --   ['DhcpSubnetNotPresent'] The specified IPv4 subnet does not exist
     --   on the DHCP server.
     --
-    --   ['E.DhcpJetError'] An error occurred while accessing the DHCP server
+    --   ['DhcpJetError'] An error occurred while accessing the DHCP server
     --   database.
     --
-    --   ['E.DhcpNotReservedClient'] The specified DHCP client is not a
+    --   ['DhcpNotReservedClient'] The specified DHCP client is not a
     --   reserved client.
     --
-    --   ['E.DhcpInvalidRange'] The specified IPv4 range does not match an
+    --   ['DhcpInvalidRange'] The specified IPv4 range does not match an
     --   existing IPv4 range.
     --
-    --   ['E.ScopeRangePolicyChangeConflict'] An IP address range is
+    --   ['ScopeRangePolicyChangeConflict'] An IP address range is
     --   configured for a policy in this scope. This operation cannot be
     --   performed on the scope IP address range until the policy IP address
     --   range is suitably modified.
@@ -189,28 +180,29 @@ enumReservations dhcp (Context server subnet) = do
 -- | Remove a reservation from the server
 removeReservation :: DhcpApi -> Context -> Mapping
     -> ClientType
-    -- ^ Specify a DHCP reservation, BOOTP reservation, or both. This is untested.
+    -- ^ Specify a DHCP reservation, BOOTP reservation, or both. This is
+    -- untested.
     -> Bool
     -- ^ Specify whether any active leases for the reservation should be
     -- removed as well.
     -> IO ()
-    -- ^ This function will throw an 'E.Win32Exception' when the internal Win32
+    -- ^ This function will throw an 'Win32Exception' when the internal Win32
     -- call returnes an error condition. MSDN lists the following exceptions,
     -- but others might be thrown as well:
     --
-    --   ['E.DhcpSubnetNotPresent'] The specified IPv4 subnet does not exist
+    --   ['DhcpSubnetNotPresent'] The specified IPv4 subnet does not exist
     --   on the DHCP server.
     --
-    --   ['E.DhcpElementCantRemove'] Failure can occur for any number of
+    --   ['DhcpElementCantRemove'] Failure can occur for any number of
     --   reasons.
     --
-    --   ['E.DhcpJetError'] An error occurred while accessing the DHCP server
+    --   ['DhcpJetError'] An error occurred while accessing the DHCP server
     --   database.
     --
-    --   ['E.DhcpInvalidRange'] The specified IPv4 range does not match an
+    --   ['DhcpInvalidRange'] The specified IPv4 range does not match an
     --   existing IPv4 range.
     --
-    --   ['E.ScopeRangePolicyChangeConflict'] An IP address range is
+    --   ['ScopeRangePolicyChangeConflict'] An IP address range is
     --   configured for a policy in this scope. This operation cannot be
     --   performed on the scope IP address range until the policy IP address
     --   range is suitably modified.
@@ -228,15 +220,15 @@ enumSubnetClientsV4 dhcp server subnet =
     alloca $ \pElementsRead ->
     alloca $ \pElementsTotal ->
     with nullPtr $ \ppInfoArray -> do
-    -- We have to call enumSubnetElementsV4 at least twice for a sucessfull run.
-    -- Failure to use the returned resumeHandle may result in an internal access
-    -- violation within RPCRT4.dll.
+    -- We have to call enumSubnetElementsV4 at least twice for a sucessfull
+    -- run.  Failure to use the returned resumeHandle may result in an
+    -- internal access violation within RPCRT4.dll.
     let loop acc = do
-            ret <- E.fromDWORD <$> c_EnumSubnetClientsV4 dhcp pServer (toWord32 subnet)
+            ret <- fromDWORD <$> c_EnumSubnetClientsV4 dhcp pServer (toWord32 subnet)
                                    pResumeHandle 0xFFFFFFFF ppInfoArray
                                    pElementsRead pElementsTotal
-            unless (elem ret [E.Success, E.MoreData, E.NoMoreItems])
-                $ E.failWith "EnumSubnetClientsV4" ret
+            unless (elem ret [Success, MoreData, NoMoreItems])
+                $ failWith "EnumSubnetClientsV4" ret
 
             melems <- scrubWith ppInfoArray $ \pInfoArray -> do
                 SUBNET_CLIENT_INFO_ARRAY_V4 (LengthBuffer _ elems) <- peekDhcp clientInfoArray pInfoArray
@@ -244,7 +236,7 @@ enumSubnetClientsV4 dhcp server subnet =
                 return elems
             let elems = fromMaybe [] melems
 
-            if (ret == E.NoMoreItems || ret == E.Success)
+            if (ret == NoMoreItems || ret == Success)
               then return (elems:acc)
               else loop (elems:acc)
 
@@ -260,15 +252,15 @@ enumSubnetElementsV4 dhcp server subnet elementType =
     alloca $ \pElementsRead ->
     alloca $ \pElementsTotal ->
     with nullPtr $ \ppInfoArray -> do
-    -- We have to call enumSubnetElementsV4 at least twice for a sucessfull run.
-    -- Failure to use the returned resumeHandle may result in an internal access
-    -- violation within RPCRT4.dll.
+    -- We have to call enumSubnetElementsV4 at least twice for a sucessfull
+    -- run.  Failure to use the returned resumeHandle may result in an
+    -- internal access violation within RPCRT4.dll.
     let loop acc = do
-            ret <- E.fromDWORD <$> c_EnumSubnetElementsV4 dhcp pServer (toWord32 subnet) elementType
+            ret <- fromDWORD <$> c_EnumSubnetElementsV4 dhcp pServer (toWord32 subnet) elementType
                                    pResumeHandle 0xFFFFFFFF ppInfoArray
                                    pElementsRead pElementsTotal
-            unless (elem ret [E.Success, E.MoreData, E.NoMoreItems])
-                $ E.failWith "EnumSubnetElementsV4" ret
+            unless (elem ret [Success, MoreData, NoMoreItems])
+                $ failWith "EnumSubnetElementsV4" ret
 
             melems <- scrubWith ppInfoArray $ \pInfoArray -> do
                 SUBNET_ELEMENT_INFO_ARRAY_V4 (LengthBuffer _ elems) <- peekDhcp infoArray pInfoArray
@@ -280,7 +272,7 @@ enumSubnetElementsV4 dhcp server subnet elementType =
             -- on how this should work doesn't seem right. In my testing
             -- elementsTotal always returns 0x7fffffff until the last loop, at
             -- which time it always matches elementsRead.
-            if (ret == E.NoMoreItems || ret == E.Success)
+            if (ret == NoMoreItems || ret == Success)
               then return (elems:acc)
               else loop (elems:acc)
 
@@ -291,7 +283,7 @@ addSubnetElementV4 :: DhcpApi -> Text -> Ip -> SUBNET_ELEMENT_DATA_V4 -> IO ()
 addSubnetElementV4 dhcp server subnet elementData =
     withTString server $ \pServer ->
     withDhcp subnetElementData elementData $ \pElementData ->
-    E.failUnlessSuccess "AddSubnetElementsV4"
+    failUnlessSuccess "AddSubnetElementsV4"
     $ c_AddSubnetElementV4 dhcp pServer (toWord32 subnet) pElementData
 
 -- | Remove an IPv4 subnet element from an IPv4 subnet defined on the DHCPv4
@@ -322,37 +314,29 @@ removeSubnetElementV4
                   --   with the DHCPv4 client lease record on the DHCPv4
                   --   server.
     -> IO ()
-    -- ^ This function will throw an 'E.Win32Exception' when the internal Win32
+    -- ^ This function will throw an 'Win32Exception' when the internal Win32
     -- call returnes an error condition. MSDN lists the following exceptions,
     -- but others might be thrown as well:
     --
-    --   ['E.DhcpSubnetNotPresent'] The specified IPv4 subnet does not exist
+    --   ['DhcpSubnetNotPresent'] The specified IPv4 subnet does not exist
     --   on the DHCP server.
     --
-    --   ['E.DhcpElementCantRemove'] Failure can occur for any number of
+    --   ['DhcpElementCantRemove'] Failure can occur for any number of
     --   reasons.
     --
-    --   ['E.DhcpJetError'] An error occurred while accessing the DHCP server
+    --   ['DhcpJetError'] An error occurred while accessing the DHCP server
     --   database.
     --
-    --   ['E.DhcpInvalidRange'] The specified IPv4 range does not match an
+    --   ['DhcpInvalidRange'] The specified IPv4 range does not match an
     --   existing IPv4 range.
     --
-    --   ['E.ScopeRangePolicyChangeConflict'] An IP address range is
+    --   ['ScopeRangePolicyChangeConflict'] An IP address range is
     --   configured for a policy in this scope. This operation cannot be
     --   performed on the scope IP address range until the policy IP address
     --   range is suitably modified.
 removeSubnetElementV4 dhcp server subnet elementData forceFlag =
     withTString server $ \pServer ->
     withDhcp subnetElementData elementData $ \pElementData ->
-    E.failUnlessSuccess "RemoveSubnetElementV4"
+    failUnlessSuccess "RemoveSubnetElementV4"
     $ c_RemoveSubnetElementV4 dhcp pServer (toWord32 subnet) pElementData
           (fromIntegral . fromEnum $ forceFlag)
-
-withTStringLen :: Text -> (LPTSTR -> T.I16 -> IO a) -> IO a
-withTStringLen text act = T.useAsPtr (T.snoc text (chr 0x0)) $ \ptr len ->
-    act (castPtr ptr) len
-
-withTString :: Text -> (LPTSTR -> IO a) -> IO a
-withTString text act = withTStringLen text $ \ptr _ -> do
-    act ptr

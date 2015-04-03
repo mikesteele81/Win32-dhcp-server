@@ -6,15 +6,12 @@ module System.Win32.DHCP.Reservation
     , reservation
     ) where
 
-import Control.Applicative
-import Foreign
-
 import Data.Ip
 import Data.Mac
+import Import
 import System.Win32.DHCP.CLIENT_UID
 import System.Win32.DHCP.DhcpStructure
 import System.Win32.DHCP.Types (ClientType)
-import Utils (scrubbing_)
 
 -- | A Reservation guarantees that a device with a given Mac address will
 -- always be assigned to a particular IP address. A reservation is not the

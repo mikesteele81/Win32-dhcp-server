@@ -6,15 +6,11 @@ module System.Win32.DHCP.SEARCH_INFO
   , withSearchInfo
   ) where
 
-import Data.Monoid ((<>))
 import qualified Data.Text as T
-import Foreign
-import Foreign.C.Types
-
-import System.Win32.Types
 
 import Data.Ip
 import Data.Mac
+import Import
 import System.Win32.DHCP.CLIENT_UID
 
 -- typedef enum _DHCP_CLIENT_SEARCH_TYPE { 
@@ -65,4 +61,7 @@ withSearchInfo si f = allocaBytes 12 $ \ptr -> do
     case si of
       ClientIpAddress x -> poke (castPtr pX) x >> f ptr
       ClientHardwareAddress m -> withMac m $ \pm -> copyBytes (castPtr pX) pm 8 >> f ptr
-      ClientName str -> withTString str $ \pstr -> copyBytes (castPtr pX) pstr 4 >> f ptr
+      -- We're preserving API compatibility here. A future version of
+      -- Win32-dhcp-server will used Text values.
+      ClientName str -> withTString (T.pack str)
+          $ \pstr -> copyBytes (castPtr pX) pstr 4 >> f ptr

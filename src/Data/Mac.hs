@@ -14,10 +14,8 @@ module Data.Mac
     , toWord64
     ) where
 
-import Control.Applicative
 import Control.Monad (unless)
 import Data.Bits
-import Data.Monoid
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as L
@@ -25,9 +23,8 @@ import qualified Data.Text.Lazy.Builder as L
 import qualified Data.Text.Lazy.Builder.Int as L
 import Data.Text.Read
 import Data.Word
-import Foreign
 
-import Utils
+import Import
 
 -- |A Mac is a 6-byte unique identifier used in layer-two network addressing.
 -- Its `Storable` instance occupies 6 bytes of memory when `poke`d with the

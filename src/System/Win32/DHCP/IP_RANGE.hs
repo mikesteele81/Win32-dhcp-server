@@ -2,10 +2,8 @@ module System.Win32.DHCP.IP_RANGE
     ( IP_RANGE (..)
     ) where
 
-import Control.Applicative
-import Foreign
-
 import Data.Ip
+import Import
 
 data IP_RANGE = IP_RANGE !Ip !Ip
 
