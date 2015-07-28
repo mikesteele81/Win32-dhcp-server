@@ -48,6 +48,8 @@ reservation = DhcpStructure
     { peekDhcp = peekReservation
     , freeDhcpChildren = freeReservation
     , withDhcp' = withReservation'
+    -- I arrived at this size through experimentation. It seems like the
+    -- size should be 12, but that is not the case.
     , sizeDhcp = 10
     }
 
