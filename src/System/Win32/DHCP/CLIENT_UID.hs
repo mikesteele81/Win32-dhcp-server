@@ -31,8 +31,9 @@ clientUid :: DhcpStructure CLIENT_UID
 clientUid = newtypeDhcpStructure CLIENT_UID unwrap
     $ lengthBuffer (basicDhcpArray storableDhcpStructure)
 
--- Functions returning a CLIENT_UID often have the first 5 bytes hold
--- information about the subnet being used.
+-- |Functions returning a CLIENT_UID often have the first 5 bytes hold
+-- information about the subnet being used. Microsoft does not document this,
+-- but it can be determined through experimentation.
 macCuidDrop5 :: CLIENT_UID -> Mac
 macCuidDrop5 (CLIENT_UID (LengthBuffer _ bytes)) = fromOctets a b c d e f
   where
