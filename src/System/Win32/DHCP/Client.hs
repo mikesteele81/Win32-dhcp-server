@@ -41,7 +41,7 @@ data Client = Client
     -- ^ Information on the DHCP server that assigned the lease to the client.
     , clientType            :: !ClientType
     }
- 
+
 clientInfo :: DhcpStructure Client
 clientInfo = DhcpStructure
     { peekDhcp = peekClientInfoV4
@@ -52,7 +52,7 @@ clientInfo = DhcpStructure
     }
 
 withClientInfo' :: Client -> Ptr Client -> IO r -> IO r
-withClientInfo' c ptr f = 
+withClientInfo' c ptr f =
     -- The Mac is inlined, so we'll need to copy pmacsrc into pmac
     withMac     (clientHardwareAddress c) $ \pcuidsrc ->
     withMaybeTString (clientName c)       $ \pclientName ->
@@ -60,7 +60,8 @@ withClientInfo' c ptr f =
     withDhcp' hostInfo   (clientOwnerHost c) (pownerHost ptr) $ do
     poke (pclientIP ptr)     $ clientIp c
     poke (psubnetMask ptr)   $ clientSubnetMask c
-    -- we can't use the Storable instance for Mac here.
+    -- We can't use the Storable instance for Mac here. The CLIENT_UID
+    -- structure is inlined into ClientInfo.
     copyBytes (pmac ptr) pcuidsrc $ sizeDhcp clientUid
     poke (ppclientName ptr)    pclientName
     poke (ppclientComment ptr) pclientComment
