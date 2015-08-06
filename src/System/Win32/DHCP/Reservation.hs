@@ -68,7 +68,7 @@ freeReservation freefunc ptr = do
     freeDhcp clientUid freefunc `scrubbing_` ppCuid ptr
 
 ppCuid :: Ptr Reservation -> Ptr (Ptr CLIENT_UID)
-ppCuid ptr = castPtr ptr `plusPtr` 4
+ppCuid p = plusPtr p 4
 
 pClientType :: Ptr Reservation -> Ptr ClientType
 pClientType p = plusPtr p 8
