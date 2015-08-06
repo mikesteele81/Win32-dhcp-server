@@ -78,6 +78,6 @@ withReservation' :: Reservation -> Ptr Reservation
 withReservation' (Reservation (Mapping mac address) clientType) ptr f =
     withMac mac $ \pCuid -> do
     poke (castPtr ptr) address
-    pokeByteOff (castPtr ptr) 4 pCuid
-    pokeByteOff (castPtr ptr) 8 clientType
+    ppCuid ptr `poke` pCuid
+    pClientType ptr `poke` clientType
     f
