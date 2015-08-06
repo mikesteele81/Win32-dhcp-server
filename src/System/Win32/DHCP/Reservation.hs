@@ -70,6 +70,9 @@ freeReservation freefunc ptr = do
 ppCuid :: Ptr Reservation -> Ptr (Ptr CLIENT_UID)
 ppCuid ptr = castPtr ptr `plusPtr` 4
 
+pClientType :: Ptr Reservation -> Ptr ClientType
+pClientType p = plusPtr p 8
+
 withReservation' :: Reservation -> Ptr Reservation
     -> IO r -> IO r
 withReservation' (Reservation (Mapping mac address) clientType) ptr f =
