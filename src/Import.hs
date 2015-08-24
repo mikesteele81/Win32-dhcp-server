@@ -37,7 +37,6 @@ import System.Win32.Types as X
            , failIfFalse_, failIf, errorWin, withTString, withTStringLen)
 import qualified System.Win32.Types as W32
 
-
 -- |Peek a string that might be null. Null pointers become Nothing
 peekMaybeTString :: LPTSTR -> IO (Maybe String)
 peekMaybeTString ptr
@@ -56,17 +55,17 @@ withTStringLen text act = T.useAsPtr (T.snoc text (chr 0x0)) $ \ptr len ->
 withTString :: Text -> (LPTSTR -> IO a) -> IO a
 withTString text act = withTStringLen text $ \ptr _ -> act ptr
 
--- | Suppress the 'Left' value of an 'Either'
+-- |Suppress the 'Left' value of an 'Either'
 -- taken from the errors package
 hush :: Either a b -> Maybe b
 hush = either (const Nothing) Just
 
--- taken from the errors package
+-- |taken from the errors package
 note :: e -> Maybe a -> Either e a
 note e Nothing = Left e
 note _ (Just x) = Right x
 
--- taken from the errors package
+-- |taken from the errors package
 fmapL :: (a -> b) -> Either a r -> Either b r
 fmapL f (Left x) = Left (f x)
 fmapL _ (Right x) = (Right x)

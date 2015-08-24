@@ -48,6 +48,8 @@ reservation = DhcpStructure
     { peekDhcp = peekReservation
     , freeDhcpChildren = freeReservation
     , withDhcp' = withReservation'
+    -- I arrived at this size through experimentation. It seems like the
+    -- size should be 12, but that is not the case.
     , sizeDhcp = 10
     }
 
@@ -66,13 +68,16 @@ freeReservation freefunc ptr = do
     freeDhcp clientUid freefunc `scrubbing_` ppCuid ptr
 
 ppCuid :: Ptr Reservation -> Ptr (Ptr CLIENT_UID)
-ppCuid ptr = castPtr ptr `plusPtr` 4
+ppCuid p = plusPtr p 4
+
+pClientType :: Ptr Reservation -> Ptr ClientType
+pClientType p = plusPtr p 8
 
 withReservation' :: Reservation -> Ptr Reservation
     -> IO r -> IO r
 withReservation' (Reservation (Mapping mac address) clientType) ptr f =
     withMac mac $ \pCuid -> do
     poke (castPtr ptr) address
-    pokeByteOff (castPtr ptr) 4 pCuid
-    pokeByteOff (castPtr ptr) 8 clientType
+    ppCuid ptr `poke` pCuid
+    pClientType ptr `poke` clientType
     f
